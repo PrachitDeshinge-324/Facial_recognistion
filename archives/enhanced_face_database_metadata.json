@@ -1,0 +1,23 @@
+{
+  "model_info": {
+    "model_name": "buffalo_l",
+    "min_quality_threshold": 0.3,
+    "creation_timestamp": "2025-09-08T10:47:12",
+    "total_embeddings": 9,
+    "unique_people": 5
+  },
+  "statistics": {
+    "total_images": 9,
+    "images_processed": 9,
+    "faces_detected": 9,
+    "high_quality_faces": 0,
+    "medium_quality_faces": 9,
+    "low_quality_faces": 0,
+    "rejected_faces": 0
+  },
+  "quality_distribution": {
+    "high_quality": 0,
+    "medium_quality": 9,
+    "low_quality": 0
+  }
+}

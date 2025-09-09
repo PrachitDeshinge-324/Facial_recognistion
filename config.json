@@ -1,0 +1,43 @@
+{
+  "model_config": {
+    "primary_model": "antelopev2",
+    "fallback_model": "buffalo_l",
+    "detection_size": [640, 640],
+    "providers": ["CoreMLExecutionProvider", "CPUExecutionProvider"]
+  },
+  "recognition_config": {
+    "base_threshold": 0.4,
+    "confidence_mode": "adaptive",
+    "adaptive_thresholds": {
+      "high_quality": 0.5,
+      "medium_quality": 0.4,
+      "low_quality": 0.3
+    },
+    "ensemble_weights": {
+      "cosine_similarity": 0.6,
+      "arcface_similarity": 0.4
+    }
+  },
+  "quality_config": {
+    "min_face_quality": 0.3,
+    "quality_factors": {
+      "detection_confidence": 0.25,
+      "face_size": 0.25,
+      "center_position": 0.15,
+      "pose_angle": 0.20,
+      "age_factor": 0.15
+    }
+  },
+  "processing_config": {
+    "max_faces_per_frame": 10,
+    "frame_skip": 1,
+    "logging_level": "INFO",
+    "show_debug_info": true
+  },
+  "paths": {
+    "database_directory": "face_database",
+    "output_database": "enhanced_face_database.pkl",
+    "metadata_file": "enhanced_face_database_metadata.json",
+    "log_file": "face_recognition.log"
+  }
+}

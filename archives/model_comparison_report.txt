@@ -1,0 +1,21 @@
+
+================================================================================
+FACE RECOGNITION MODEL COMPARISON REPORT
+================================================================================
+
+Model: BUFFALO_L
+--------------------------------------------------
+Faces Detected: 9
+Embedding Dimension: 512
+Avg Processing Time: 0.1914s ± 0.0264s
+Avg Detection Score: 0.856 ± 0.027
+Avg Cosine Similarity: 0.133 ± 0.241
+Avg ArcFace Similarity: -0.367 ± 0.241
+
+
+RECOMMendations:
+--------------------------------------------------
+• ArcFace models (antelopev2) typically provide better accuracy
+• Use adaptive thresholds based on face quality
+• Implement ensemble methods for critical applications
+• Regular model updates improve performance

@@ -15,7 +15,7 @@ class FaceDatabaseBuilder:
     def __init__(self):
         """Initialize the face analysis model."""
         print("Initializing FaceAnalysis model...")
-        self.app = FaceAnalysis(name='buffalo_l', providers=['CoreMLExecutionProvider', 'CPUExecutionProvider'])
+        self.app = FaceAnalysis(name='antelopev2', providers=['CoreMLExecutionProvider', 'CPUExecutionProvider'])
         self.app.prepare(ctx_id=0, det_size=(640, 640))
         print("Model initialized successfully!")
         
@@ -111,7 +111,7 @@ class FaceDatabaseBuilder:
             face_database['embeddings'] = np.array(face_database['embeddings'])
             
             # Save the database
-            database_file = "database/face_database_buffalo.pkl"
+            database_file = "database/face_database_antelopev2.pkl"
             with open(database_file, 'wb') as f:
                 pickle.dump(face_database, f)
             

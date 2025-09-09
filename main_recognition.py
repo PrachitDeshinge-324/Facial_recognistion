@@ -12,7 +12,7 @@ from insightface.app import FaceAnalysis
 from sklearn.metrics.pairwise import cosine_similarity
 
 class FaceRecognitionSystem:
-    def __init__(self, database_file="database/face_database_buffalo.pkl", threshold=0.5):
+    def __init__(self, database_file="database/face_database_antelopev2.pkl", threshold=0.5):
         """
         Initialize the face recognition system.
         
@@ -23,7 +23,7 @@ class FaceRecognitionSystem:
         print("Initializing Face Recognition System...")
         
         # Initialize the face analysis model
-        self.app = FaceAnalysis(name='buffalo_l', providers=['CoreMLExecutionProvider', 'CPUExecutionProvider'])
+        self.app = FaceAnalysis(name='antelopev2', providers=['CoreMLExecutionProvider', 'CPUExecutionProvider'])
         self.app.prepare(ctx_id=0, det_size=(640, 640))
         
         # Set recognition threshold
@@ -211,8 +211,8 @@ def main():
     recognition_system = FaceRecognitionSystem(threshold=0.2)
     
     # Video path - you can change this or use webcam (0)
-    # video_path = '../Facial Recognision/video/03_09_2025_face_recognition.mp4'
-    video_path = '../Person Identification/v_1/input/3c.mp4'
+    video_path = '../Facial Recognision/video/03_09_2025_face_recognition.mp4'
+    # video_path = '../Person Identification/v_1/input/3c.mp4'
     # video_path = 0
     # For webcam, use: video_path = 0
     

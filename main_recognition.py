@@ -156,6 +156,18 @@ def process_video(cap, recognition_system):
     print("\nStarting face recognition...")
     print("Press 'q' to quit")
     
+    # Ensure output directory exists
+    os.makedirs('output', exist_ok=True)
+    width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+    # Define video writer
+    output_path = os.path.join('output', 'output_video.mp4')
+    fourcc = cv.VideoWriter_fourcc(*'mp4v')  # or 'XVID' for .avi
+    fps = 30  # Set to your video's FPS
+    frame_size = (width, height)  # Set to your frame size (width, height)
+
+    out = cv.VideoWriter(output_path, fourcc, fps, frame_size)
+    
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -196,12 +208,18 @@ def process_video(cap, recognition_system):
         cv.putText(frame, f"Threshold: {recognition_system.threshold}", (10, 120), 
                   cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
         
+        # Write the frame to the output video
+        out.write(frame)
+
         # Show the frame
         cv.imshow('Face Recognition System', frame)
         
         # Check for quit
         if cv.waitKey(1) & 0xFF == ord('q'):
             break
+
+    # Release the video writer
+    out.release()
 
 def main():
     """Main function for the face recognition system."""

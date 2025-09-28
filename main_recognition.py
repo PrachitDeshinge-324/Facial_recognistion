@@ -1,49 +1,81 @@
+"""Phase 2: Real-Time Face Recognition System.
+
+This script performs real-time face recognition using the pre-built face
+database. It now consumes shared helpers for configuration and InsightFace
+initialisation to stay consistent with the rest of the codebase.
 """
-Phase 2: Real-Time Face Recognition System
-This script performs real-time face recognition using the pre-built face database.
-"""
+
+from __future__ import annotations
+
+import pickle
+import time
+from pathlib import Path
+from typing import Any, Union
 
 import cv2 as cv
 import numpy as np
-import time
-import pickle
-import os
-from insightface.app import FaceAnalysis
 from sklearn.metrics.pairwise import cosine_similarity
 
+from insightface.app import FaceAnalysis
+
+from src.config_utils import load_config
+from src.insightface_utils import (
+    AnalysisConfig,
+    create_face_analysis,
+    create_video_writer,
+    compute_fps_metrics,
+)
+
+DEFAULT_VIDEO_PATH = Path("../Facial Recognision/video/03_09_2025_face_recognition.mp4")
+
+
 class FaceRecognitionSystem:
-    def __init__(self, database_file="database/face_database_antelopev2.pkl", threshold=0.5):
-        """
-        Initialize the face recognition system.
-        
-        Args:
-            database_file: Path to the pickled face database
-            threshold: Cosine similarity threshold for recognition (0.5-0.7 recommended)
-        """
+    def __init__(
+        self,
+        config: dict[str, Any] | None = None,
+        database_file: Union[str, Path, None] = None,
+        threshold: float | None = None,
+    ) -> None:
+        """Initialise the face recognition system."""
+
+        config = config or {}
+        model_config = config.get("model_config", {})
+        recognition_config = config.get("recognition_config", {})
+        path_config = config.get("paths", {})
+
+        defaults = AnalysisConfig()
+        analysis_config = AnalysisConfig(
+            model_name=model_config.get("primary_model", defaults.model_name),
+            providers=tuple(model_config.get("providers", defaults.providers)),
+            det_size=tuple(model_config.get("detection_size", defaults.det_size)),
+            ctx_id=model_config.get("ctx_id", defaults.ctx_id),
+        )
+
         print("Initializing Face Recognition System...")
-        
-        # Initialize the face analysis model
-        self.app = FaceAnalysis(name='antelopev2', providers=['CoreMLExecutionProvider', 'CPUExecutionProvider'])
-        self.app.prepare(ctx_id=0, det_size=(640, 640))
-        
-        # Set recognition threshold
-        self.threshold = threshold
-        print(f"Recognition threshold set to: {threshold}")
-        
-        # Load the face database
-        self.face_database = None
-        self.load_face_database(database_file)
-        
+        self.app: FaceAnalysis = create_face_analysis(analysis_config)
+
+        self.threshold = threshold or recognition_config.get("base_threshold", 0.4)
+        print(f"Recognition threshold set to: {self.threshold}")
+
+        self.database_path = Path(
+            database_file
+            or path_config.get("output_database")
+            or "database/face_database_antelopev2.pkl"
+        )
+        self.face_database: dict[str, Any] | None = None
+        self.load_face_database(self.database_path)
+
     def load_face_database(self, database_file):
         """Load the pre-built face database."""
-        if not os.path.exists(database_file):
-            print(f"Warning: Face database file '{database_file}' not found!")
+        database_path = Path(database_file)
+        if not database_path.exists():
+            print(f"Warning: Face database file '{database_path}' not found!")
             print("Please run 'build_face_database.py' first to create the database.")
             print("Running in detection-only mode (no recognition).")
             return False
         
         try:
-            with open(database_file, 'rb') as f:
+            with database_path.open('rb') as f:
                 self.face_database = pickle.load(f)
             
             print(f"Face database loaded successfully!")
@@ -62,7 +94,7 @@ class FaceRecognitionSystem:
             print("Running in detection-only mode.")
             return False
     
-    def recognize_face(self, face_embedding):
+    def recognize_face(self, face_embedding: np.ndarray):
         """
         Recognize a face by comparing its embedding with the database.
         
@@ -135,9 +167,13 @@ class FaceRecognitionSystem:
         cv.putText(frame, text, (text_x + 2, text_y - 2), 
                   cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
-def open_video(video_path):
+def open_video(video_path: Union[str, int, Path]) -> cv.VideoCapture | None:
     """Open the video file and return the video capture object."""
-    cap = cv.VideoCapture(video_path)
+
+    if isinstance(video_path, int):
+        cap = cv.VideoCapture(video_path)
+    else:
+        cap = cv.VideoCapture(str(video_path))
     if not cap.isOpened():
         print("Error: Could not open video.")
         return None
@@ -148,7 +184,7 @@ def display_fps(frame, current_fps, average_fps):
     cv.putText(frame, f"FPS: {current_fps:.2f}", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
     cv.putText(frame, f"Avg FPS: {average_fps:.2f}", (10, 60), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
 
-def process_video(cap, recognition_system):
+def process_video(cap: cv.VideoCapture, recognition_system: FaceRecognitionSystem, output_path: Path) -> None:
     """Process the video with face recognition."""
     frame_count = 0
     total_fps = 0
@@ -157,24 +193,15 @@ def process_video(cap, recognition_system):
     print("Press 'q' to quit")
     
     # Ensure output directory exists
-    os.makedirs('output', exist_ok=True)
-    width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
-    # Define video writer
-    output_path = os.path.join('output', 'output_video.mp4')
-    fourcc = cv.VideoWriter_fourcc(*'mp4v')  # or 'XVID' for .avi
-    fps = 30  # Set to your video's FPS
-    frame_size = (width, height)  # Set to your frame size (width, height)
-
-    out = cv.VideoWriter(output_path, fourcc, fps, frame_size)
+    out = create_video_writer(cap, output_path)
     
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
-        
+
         # Start timing for this frame
-        start_time = time.time()
+        start_time = time.perf_counter()
         frame_count += 1
         
         # Detect faces in the frame
@@ -192,12 +219,10 @@ def process_video(cap, recognition_system):
             recognition_system.draw_face_info(frame, face, name, confidence)
         
         # Calculate FPS
-        current_time = time.time()
-        processing_time = current_time - start_time
-        current_fps = 1 / processing_time if processing_time > 0 else 0
-        
-        total_fps += current_fps
-        average_fps = total_fps / frame_count
+        current_time = time.perf_counter()
+        current_fps, average_fps, total_fps = compute_fps_metrics(
+            frame_count, total_fps, start_time, current_time
+        )
         
         # Display FPS
         display_fps(frame, current_fps, average_fps)
@@ -221,28 +246,26 @@ def process_video(cap, recognition_system):
     # Release the video writer
     out.release()
 
-def main():
+def main(video_path: Union[str, int, Path, None] = None) -> None:
     """Main function for the face recognition system."""
     print("=== Real-Time Face Recognition System ===")
-    
-    # Initialize the recognition system
-    recognition_system = FaceRecognitionSystem(threshold=0.2)
-    
-    # Video path - you can change this or use webcam (0)
-    video_path = '../Facial Recognision/video/03_09_2025_face_recognition.mp4'
-    # video_path = '../Person Identification/v_1/input/3c.mp4'
-    # video_path = 0
-    # For webcam, use: video_path = 0
-    
+
+    config = load_config()
+    recognition_system = FaceRecognitionSystem(config=config)
+
+    source = video_path if video_path is not None else DEFAULT_VIDEO_PATH
+
     # Open the video
-    cap = open_video(video_path)
+    cap = open_video(source)
     if cap is None:
         print("Failed to open video source")
         return
     
     try:
+        output_config = config.get("paths", {})
+        output_path = Path(output_config.get("recognition_output", "output/output_video.mp4"))
         # Process the video
-        process_video(cap, recognition_system)
+        process_video(cap, recognition_system, output_path)
     finally:
         # Cleanup
         cap.release()

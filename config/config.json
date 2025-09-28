@@ -6,7 +6,7 @@
     "providers": ["CoreMLExecutionProvider", "CPUExecutionProvider"]
   },
   "recognition_config": {
-    "base_threshold": 0.4,
+    "base_threshold": 0.3,
     "confidence_mode": "adaptive",
     "adaptive_thresholds": {
       "high_quality": 0.5,
@@ -36,8 +36,8 @@
   },
   "paths": {
     "database_directory": "face_database",
-    "output_database": "enhanced_face_database.pkl",
-    "metadata_file": "enhanced_face_database_metadata.json",
+    "output_database": "database/enhanced_face_database.pkl",
+    "metadata_file": "database/enhanced_face_database_metadata.json",
     "log_file": "face_recognition.log"
   }
 }

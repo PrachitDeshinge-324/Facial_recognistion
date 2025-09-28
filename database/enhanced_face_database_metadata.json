@@ -1,0 +1,18 @@
+{
+  "total_embeddings": 13,
+  "unique_identities": 9,
+  "per_identity_counts": {
+    "A": 3,
+    "Aditya": 1,
+    "Ashutosh": 1,
+    "B": 2,
+    "C": 1,
+    "D": 2,
+    "Nayan": 1,
+    "Ojasv": 1,
+    "Prachit": 1
+  },
+  "failed_images": 0,
+  "source_directory": "/Users/prachitdeshinge/IIIT/Project/Face_recognistion/face_database",
+  "database_file": "/Users/prachitdeshinge/IIIT/Project/Face_recognistion/database/enhanced_face_database.pkl"
+}

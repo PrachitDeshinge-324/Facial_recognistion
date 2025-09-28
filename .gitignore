@@ -1,0 +1,38 @@
+*.mp4
+*.pkl
+__pycache__/
+*.pyc
+*$py.class
+
+# Environments
+venv/
+.venv/
+env/
+.env/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.sublime-*
+
+# C extensions
+*.so
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# OS generated files
+.DS_Store
+
+*.pdf
+archives/*
+databases/*
+doc
+output
+samples

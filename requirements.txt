@@ -1,0 +1,11 @@
+# Core runtime
+opencv-python==4.8.1.78
+numpy==1.24.3
+pillow==10.0.1
+insightface==0.7.3
+onnxruntime==1.16.3
+scikit-learn==1.3.2
+
+# Optional analytics & visualisation
+matplotlib==3.8.0
+seaborn==0.13.0

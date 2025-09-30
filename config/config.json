@@ -3,7 +3,7 @@
     "primary_model": "antelopev2",
     "fallback_model": "buffalo_l",
     "detection_size": [640, 640],
-    "providers": ["CoreMLExecutionProvider", "CPUExecutionProvider"]
+    "providers": ["CUDAExecutionProvider","CoreMLExecutionProvider", "CPUExecutionProvider"]
   },
   "recognition_config": {
     "base_threshold": 0.3,

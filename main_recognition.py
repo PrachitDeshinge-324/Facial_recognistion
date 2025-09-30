@@ -6,6 +6,7 @@ initialisation to stay consistent with the rest of the codebase.
 """
 
 from __future__ import annotations
+from tqdm import tqdm
 
 import pickle
 import time
@@ -26,7 +27,7 @@ from src.insightface_utils import (
     compute_fps_metrics,
 )
 
-DEFAULT_VIDEO_PATH = Path("../Facial Recognision/video/03_09_2025_face_recognition.mp4")
+DEFAULT_VIDEO_PATH = Path("/content/3c.mp4")
 
 
 class FaceRecognitionSystem:
@@ -192,59 +193,44 @@ def process_video(cap: cv.VideoCapture, recognition_system: FaceRecognitionSyste
     print("\nStarting face recognition...")
     print("Press 'q' to quit")
     
-    # Ensure output directory exists
     out = create_video_writer(cap, output_path)
-    
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
 
-        # Start timing for this frame
-        start_time = time.perf_counter()
-        frame_count += 1
-        
-        # Detect faces in the frame
-        faces = recognition_system.app.get(frame)
-        
-        # Process each detected face
-        for face in faces:
-            # Get the face embedding
-            face_embedding = face.embedding
-            
-            # Recognize the face
-            name, confidence = recognition_system.recognize_face(face_embedding)
-            
-            # Draw the face info on the frame
-            recognition_system.draw_face_info(frame, face, name, confidence)
-        
-        # Calculate FPS
-        current_time = time.perf_counter()
-        current_fps, average_fps, total_fps = compute_fps_metrics(
-            frame_count, total_fps, start_time, current_time
-        )
-        
-        # Display FPS
-        display_fps(frame, current_fps, average_fps)
-        
-        # Display system info
-        cv.putText(frame, f"Faces: {len(faces)}", (10, 90), 
-                  cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
-        cv.putText(frame, f"Threshold: {recognition_system.threshold}", (10, 120), 
-                  cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
-        
-        # Write the frame to the output video
-        out.write(frame)
+    total_frames = int(cap.get(cv.CAP_PROP_FRAME_COUNT)) if cap.get(cv.CAP_PROP_FRAME_COUNT) > 0 else None
 
-        # Show the frame
-        cv.imshow('Face Recognition System', frame)
-        
-        # Check for quit
-        if cv.waitKey(1) & 0xFF == ord('q'):
-            break
+    with tqdm(total=total_frames, desc="Processing frames", unit="frame") as pbar:
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-    # Release the video writer
+            start_time = time.perf_counter()
+            frame_count += 1
+
+            faces = recognition_system.app.get(frame)
+
+            for face in faces:
+                face_embedding = face.embedding
+                name, confidence = recognition_system.recognize_face(face_embedding)
+                recognition_system.draw_face_info(frame, face, name, confidence)
+
+            current_time = time.perf_counter()
+            current_fps, average_fps, total_fps = compute_fps_metrics(
+                frame_count, total_fps, start_time, current_time
+            )
+
+            display_fps(frame, current_fps, average_fps)
+
+            cv.putText(frame, f"Faces: {len(faces)}", (10, 90), 
+                      cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+            cv.putText(frame, f"Threshold: {recognition_system.threshold}", (10, 120), 
+                      cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+
+            out.write(frame)
+
+            pbar.update(1)  # update tqdm progress bar
+
     out.release()
+
 
 def main(video_path: Union[str, int, Path, None] = None) -> None:
     """Main function for the face recognition system."""
@@ -269,7 +255,7 @@ def main(video_path: Union[str, int, Path, None] = None) -> None:
     finally:
         # Cleanup
         cap.release()
-        cv.destroyAllWindows()
+        # cv.destroyAllWindows()
         print("\nFace recognition system stopped.")
 
 if __name__ == "__main__":

@@ -5,6 +5,10 @@ This repository contains a two-phase InsightFace-based workflow:
 1. **Database build** – extract face embeddings from curated images and persist them for fast lookup.
 2. **Real-time recognition** – stream video frames, detect faces, and recognise identities against the database.
 
+## Installation
+```bash
+pip install -r requirements.txt --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
+```
 ## Quick start
 
 ```bash

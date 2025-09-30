@@ -10,11 +10,14 @@ from pathlib import Path
 from typing import Iterable, Sequence, Tuple
 
 import cv2 as cv
+import onnxruntime as ort
 from insightface.app import FaceAnalysis
 
 DEFAULT_MODEL_NAME = "antelopev2"
 DEFAULT_DET_SIZE: Tuple[int, int] = (640, 640)
 DEFAULT_PROVIDERS: Tuple[str, ...] = (
+    "CUDAExecutionProvider",
+    "TensorrtExecutionProvider",
     "CoreMLExecutionProvider",
     "CPUExecutionProvider",
 )
@@ -31,11 +34,34 @@ class AnalysisConfig:
 
 
 def create_face_analysis(config: AnalysisConfig | None = None) -> FaceAnalysis:
-    """Initialise and prepare a :class:`FaceAnalysis` instance."""
+    cfg = AnalysisConfig()
+    available = set(ort.get_available_providers())
+    providers = [p for p in cfg.providers if p in available]
+    print("This are providers",providers)
+    def _init(model_name: str) -> FaceAnalysis:
+        return FaceAnalysis(
+            name=model_name,
+            providers=providers,
+            allowed_modules=("detection", "recognition"),
+        )
 
-    cfg = config or AnalysisConfig()
-    app = FaceAnalysis(name=cfg.model_name, providers=list(cfg.providers))
-    app.prepare(ctx_id=cfg.ctx_id, det_size=cfg.det_size)
+    models_to_try = [cfg.model_name]
+    if cfg.model_name != "buffalo_l":
+        models_to_try.append("buffalo_l")
+
+    last_error: Exception | None = None
+    for model_name in models_to_try:
+        try:
+            app = _init(model_name)
+            break
+        except AssertionError as err:
+            last_error = err
+    else:
+        raise last_error
+
+    has_gpu = any(p in {"CUDAExecutionProvider", "TensorrtExecutionProvider"} for p in providers)
+    ctx_id = cfg.ctx_id if has_gpu else -1
+    app.prepare(ctx_id=ctx_id, det_size=cfg.det_size)
     return app
 
 

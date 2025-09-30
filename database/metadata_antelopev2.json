@@ -13,6 +13,6 @@
     "Prachit": 1
   },
   "failed_images": 0,
-  "source_directory": "/Users/prachitdeshinge/IIIT/Project/Face_recognistion/face_database",
-  "database_file": "/Users/prachitdeshinge/IIIT/Project/Face_recognistion/database/enhanced_face_database.pkl"
+  "source_directory": "/Users/prachitdeshinge/IIIT/Project/Face_recognistionmodular/face_database",
+  "database_file": "/Users/prachitdeshinge/IIIT/Project/Face_recognistionmodular/database/face_database_antelopev2.pkl"
 }

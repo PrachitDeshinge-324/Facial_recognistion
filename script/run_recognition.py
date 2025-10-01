@@ -49,7 +49,7 @@ def process_video(video_path, output_path, display=True):
     
     # Initialize metrics
     frame_count = 0
-    total_fps = 0
+    process_start_time = time.perf_counter()
     
     print("\nStarting face recognition...")
     if display:
@@ -76,8 +76,9 @@ def process_video(video_path, output_path, display=True):
             
             # Calculate FPS
             current_time = time.perf_counter()
-            current_fps, average_fps, total_fps = compute_fps_metrics(
-                frame_count, total_fps, start_time, current_time
+            # Updated to match the new function signature
+            current_fps, average_fps = compute_fps_metrics(
+                frame_count, process_start_time, start_time, current_time
             )
             
             # Display info

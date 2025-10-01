@@ -57,23 +57,27 @@ def create_video_writer(
 
 def compute_fps_metrics(
     frame_count: int,
-    total_fps: float,
-    start_time: float,
-    end_time: float,
-) -> Tuple[float, float, float]:
+    processing_start_time: float,
+    frame_start_time: float,
+    frame_end_time: float
+) -> Tuple[float, float]:
     """Calculate FPS metrics.
     
     Args:
         frame_count: Number of frames processed
-        total_fps: Running sum of FPS
-        start_time: Start time of frame processing
-        end_time: End time of frame processing
+        processing_start_time: Time when processing began (first frame)
+        frame_start_time: Start time of current frame processing
+        frame_end_time: End time of current frame processing
         
     Returns:
-        Tuple of (current_fps, average_fps, updated_total_fps)
+        Tuple of (current_fps, average_fps)
     """
-    frame_duration = max(end_time - start_time, 1e-6)
+    # Calculate current (instantaneous) FPS
+    frame_duration = max(frame_end_time - frame_start_time, 1e-6)
     current_fps = 1.0 / frame_duration
-    updated_total = total_fps + current_fps
-    average_fps = updated_total / max(frame_count, 1)
-    return current_fps, average_fps, updated_total
+    
+    # Calculate true average FPS since beginning
+    total_elapsed = frame_end_time - processing_start_time
+    average_fps = frame_count / max(total_elapsed, 1e-6)
+    
+    return current_fps, average_fps

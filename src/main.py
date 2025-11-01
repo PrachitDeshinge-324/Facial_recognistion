@@ -10,8 +10,8 @@ import cv2 as cv
 
 from insightface.app import FaceAnalysis
 
-from .config_utils import load_config
-from .insightface_utils import AnalysisConfig, create_face_analysis, compute_fps_metrics
+from ..config.models import AnalysisConfig, get_model_config
+from ..utils import create_face_analysis, compute_fps_metrics
 
 DEFAULT_VIDEO_PATH = Path("../Facial Recognision/video/03_09_2025_face_recognition.mp4")
 
@@ -72,15 +72,12 @@ def process_video(cap: cv.VideoCapture, app: FaceAnalysis) -> None:
 
 
 def main(video_path: Union[str, int, Path, None] = None) -> None:
-    config = load_config()
-
-    model_config = config.get("model_config", {})
-    defaults = AnalysisConfig()
+    model_config = get_model_config()
+    
     analysis_config = AnalysisConfig(
-        model_name=model_config.get("fallback_model", "buffalo_l"),
-        providers=tuple(model_config.get("providers", defaults.providers)),
-        det_size=tuple(model_config.get("detection_size", defaults.det_size)),
-        ctx_id=model_config.get("ctx_id", 0),
+        model_name=model_config["fallback_model"],
+        providers=tuple(model_config["providers"]),
+        det_size=tuple(model_config["detection_size"]),
     )
 
     app = create_face_analysis(analysis_config)

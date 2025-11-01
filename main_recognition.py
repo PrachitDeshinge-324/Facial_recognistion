@@ -19,49 +19,36 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from insightface.app import FaceAnalysis
 
-from src.config_utils import load_config
-from src.insightface_utils import (
-    AnalysisConfig,
-    create_face_analysis,
-    create_video_writer,
-    compute_fps_metrics,
-)
-
-DEFAULT_VIDEO_PATH = Path("/content/3c.mp4")
+from config.models import AnalysisConfig, get_recognition_config, get_model_config
+from config.paths import OUTPUT_DATABASE, DEFAULT_VIDEO_PATH, OUTPUT_VIDEO_PATH
+from utils import create_face_analysis, create_video_writer, compute_fps_metrics
 
 
 class FaceRecognitionSystem:
     def __init__(
         self,
-        config: dict[str, Any] | None = None,
         database_file: Union[str, Path, None] = None,
         threshold: float | None = None,
     ) -> None:
         """Initialise the face recognition system."""
 
-        config = config or {}
-        model_config = config.get("model_config", {})
-        recognition_config = config.get("recognition_config", {})
-        path_config = config.get("paths", {})
+        model_config = get_model_config()
+        recognition_config = get_recognition_config()
 
-        defaults = AnalysisConfig()
         analysis_config = AnalysisConfig(
-            model_name=model_config.get("primary_model", defaults.model_name),
-            providers=tuple(model_config.get("providers", defaults.providers)),
-            det_size=tuple(model_config.get("detection_size", defaults.det_size)),
-            ctx_id=model_config.get("ctx_id", defaults.ctx_id),
+            model_name=model_config["primary_model"],
+            providers=tuple(model_config["providers"]),
+            det_size=tuple(model_config["detection_size"]),
         )
 
         print("Initializing Face Recognition System...")
         self.app: FaceAnalysis = create_face_analysis(analysis_config)
 
-        self.threshold = threshold or recognition_config.get("base_threshold", 0.4)
+        self.threshold = threshold or recognition_config["base_threshold"]
         print(f"Recognition threshold set to: {self.threshold}")
 
         self.database_path = Path(
-            database_file
-            or path_config.get("output_database")
-            or "database/face_database_antelopev2.pkl"
+            database_file or OUTPUT_DATABASE
         )
         self.face_database: dict[str, Any] | None = None
         self.load_face_database(self.database_path)
@@ -198,7 +185,7 @@ def process_video(cap: cv.VideoCapture, recognition_system: FaceRecognitionSyste
     total_frames = int(cap.get(cv.CAP_PROP_FRAME_COUNT)) if cap.get(cv.CAP_PROP_FRAME_COUNT) > 0 else None
 
     with tqdm(total=total_frames, desc="Processing frames", unit="frame") as pbar:
-        while cap.isOpened():
+        while cap.isOpened() and frame_count < 500:
             ret, frame = cap.read()
             if not ret:
                 break
@@ -236,8 +223,7 @@ def main(video_path: Union[str, int, Path, None] = None) -> None:
     """Main function for the face recognition system."""
     print("=== Real-Time Face Recognition System ===")
 
-    config = load_config()
-    recognition_system = FaceRecognitionSystem(config=config)
+    recognition_system = FaceRecognitionSystem()
 
     source = video_path if video_path is not None else DEFAULT_VIDEO_PATH
 
@@ -248,10 +234,8 @@ def main(video_path: Union[str, int, Path, None] = None) -> None:
         return
     
     try:
-        output_config = config.get("paths", {})
-        output_path = Path(output_config.get("recognition_output", "output/output_video.mp4"))
         # Process the video
-        process_video(cap, recognition_system, output_path)
+        process_video(cap, recognition_system, OUTPUT_VIDEO_PATH)
     finally:
         # Cleanup
         cap.release()

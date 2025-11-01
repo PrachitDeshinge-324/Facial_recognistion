@@ -24,17 +24,17 @@ python src/main.py                          # detection-only demo
 .
 ├── build_face_database.py      # Phase 1: embedding generation
 ├── main_recognition.py         # Phase 2: real-time recognition loop
+├── utils.py                    # InsightFace utilities and helpers
 ├── requirements.txt            # Runtime dependencies
 ├── README.md                   # Project overview (this file)
-├── config/                     # Shared runtime configuration
-│   └── config.json
+├── config/                     # Python configuration modules
+│   ├── __init__.py             # Config package initialization
+│   ├── models.py               # Model and processing configurations
+│   └── paths.py                # Path configurations
 ├── src/                        # Shared libraries & auxiliary scripts
 │   ├── main.py                 # Detector-only playground
-│   ├── validate_database.py    # Database structure sanity check
-│   ├── config_utils.py         # Config loader used across entry-points
-│   └── insightface_utils.py    # InsightFace helper utilities
-├── database/                   # Generated embedding stores & metadata
-├── face_database/              # Source images grouped by identity
+│   └── validate_database.py    # Database structure sanity check
+├── face_database/              # Source images and generated embeddings
 ├── face_detection/             # Auxiliary detection experiments
 ├── samples/                    # Example inputs for quick tests
 ├── output/                     # Generated artefacts (safe to delete)
@@ -46,7 +46,12 @@ Use the `output/` directory as scratch space—its contents are excluded from ve
 
 ## Configuration
 
-Runtime options live in `config/config.json`. All entry points share `src.config_utils.load_config`, so tweaks (such as model providers or output locations) propagate automatically.
+Configuration is now managed through Python modules in the `config/` directory:
+
+- **`config/models.py`** - Model settings, thresholds, providers, and processing options
+- **`config/paths.py`** - File paths, directories, and output locations
+
+To modify settings, simply edit the relevant Python configuration file. All entry points automatically use these centralized configurations.
 
 ## Legacy DeepFace workflow
 

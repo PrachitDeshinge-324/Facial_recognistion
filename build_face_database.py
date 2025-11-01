@@ -19,8 +19,9 @@ from typing import Any, Mapping, Sequence
 import cv2 as cv
 import numpy as np
 
-from src.config_utils import load_config
-from src.insightface_utils import AnalysisConfig, create_face_analysis
+from config.models import AnalysisConfig, get_model_config
+from config.paths import DATABASE_DIRECTORY, OUTPUT_DATABASE, METADATA_FILE
+from utils import create_face_analysis
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tiff"}
 
@@ -33,27 +34,20 @@ class DatabasePaths:
 
 
 class FaceDatabaseBuilder:
-    def __init__(self, config: Mapping[str, Any] | None = None) -> None:
-        config = config or {}
-        model_config = config.get("model_config", {})
-        path_config = config.get("paths", {})
+    def __init__(self) -> None:
+        model_config = get_model_config()
 
-        defaults = AnalysisConfig()
         analysis_config = AnalysisConfig(
-            model_name=model_config.get("primary_model", defaults.model_name),
-            providers=tuple(model_config.get("providers", defaults.providers)),
-            det_size=tuple(model_config.get("detection_size", defaults.det_size)),
-            ctx_id=model_config.get("ctx_id", defaults.ctx_id),
+            model_name=model_config["primary_model"],
+            providers=tuple(model_config["providers"]),
+            det_size=tuple(model_config["detection_size"]),
         )
 
         print("Initializing InsightFace model...")
         self.app = create_face_analysis(analysis_config)
         print("Model initialised successfully!")
 
-        root = Path(path_config.get("database_directory", "face_database"))
-        output = Path(path_config.get("output_database", "database/face_database_antelopev2.pkl"))
-        metadata = Path(path_config.get("metadata_file", "database/face_database_metadata.json"))
-        self.paths = DatabasePaths(root=root, output=output, metadata=metadata)
+        self.paths = DatabasePaths(root=DATABASE_DIRECTORY, output=OUTPUT_DATABASE, metadata=METADATA_FILE)
 
     def extract_face_embedding(self, image_path: Path) -> tuple[np.ndarray | None, np.ndarray | None]:
         """Extract the first face embedding (and landmarks) from the given image."""
@@ -296,7 +290,6 @@ class FaceDatabaseBuilder:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build the InsightFace database")
     parser.add_argument("--database-path", type=Path, default=None, help="Override the database input directory")
-    parser.add_argument("--config", type=Path, default=Path("config/config.json"), help="Path to the configuration file")
     parser.add_argument("--visualize", action="store_true", help="Enable PCA and landmark visualisations")
     return parser.parse_args()
 
@@ -307,9 +300,8 @@ def main() -> None:
     print("face_database/ -> Person/ -> image1.jpg")
 
     args = parse_args()
-    config = load_config(args.config)
 
-    builder = FaceDatabaseBuilder(config=config)
+    builder = FaceDatabaseBuilder()
     database_dir = args.database_path or builder.paths.root
 
     if not database_dir.exists():

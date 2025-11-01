@@ -40,11 +40,19 @@ find . -name "*~" -delete 2>/dev/null
 echo "Removing log files..."
 find . -name "*.log" -delete 2>/dev/null
 
+<<<<<<< HEAD
 # Remove output directory contents (but keep the directory)
 if [ -d "output" ]; then
     echo "Cleaning output directory..."
     rm -rf output/* 2>/dev/null
 fi
+=======
+# # Remove output directory contents (but keep the directory)
+# if [ -d "output" ]; then
+#     echo "Cleaning output directory..."
+#     rm -rf output/* 2>/dev/null
+# fi
+>>>>>>> cb427f270ee4bc78833c410661139716d6979560
 
 # Remove build artifacts
 echo "Removing build artifacts..."

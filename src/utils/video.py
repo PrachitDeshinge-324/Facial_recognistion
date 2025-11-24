@@ -2,19 +2,32 @@
 
 from pathlib import Path
 from typing import Tuple, Union
+import threading
+import time
 
 import cv2 as cv
 
 
-def open_video(video_path: Union[str, int, Path]) -> cv.VideoCapture:
+def open_video(video_path: Union[str, int, Path], use_threading: bool = False) -> Union[cv.VideoCapture, 'ThreadedCamera']:
     """Open the video file or camera stream.
     
     Args:
         video_path: Path to video file or camera index
+        use_threading: Whether to use threaded capture (recommended for cameras)
         
     Returns:
-        OpenCV VideoCapture object or None if failed
+        OpenCV VideoCapture object or ThreadedCamera or None if failed
     """
+    if use_threading:
+        # Only import if needed to avoid circular imports if ThreadedCamera is in this file
+        # (It is in this file, so we can use it directly)
+        try:
+            if isinstance(video_path, str) and video_path.isdigit():
+                video_path = int(video_path)
+            return ThreadedCamera(video_path)
+        except Exception as e:
+            print(f"Failed to start threaded camera: {e}, falling back to standard capture")
+
     if isinstance(video_path, int):
         cap = cv.VideoCapture(video_path)
     else:
@@ -81,3 +94,49 @@ def compute_fps_metrics(
     average_fps = frame_count / max(total_elapsed, 1e-6)
     
     return current_fps, average_fps
+
+
+class ThreadedCamera:
+    """Threaded camera capture for better performance."""
+    
+    def __init__(self, src=0):
+        self.capture = cv.VideoCapture(src)
+        self.capture.set(cv.CAP_PROP_BUFFERSIZE, 2)
+        
+        # FPS = 1/X
+        # X = desired_fps
+        self.FPS = 1/30
+        self.FPS_MS = int(self.FPS * 1000)
+        
+        # Start frame retrieval thread
+        self.thread = threading.Thread(target=self.update, args=())
+        self.thread.daemon = True
+        self.status = False
+        self.frame = None
+        self.stopped = False
+        
+        # Read first frame
+        if self.capture.isOpened():
+            self.status, self.frame = self.capture.read()
+            self.thread.start()
+
+    def update(self):
+        while not self.stopped:
+            if self.capture.isOpened():
+                self.status, self.frame = self.capture.read()
+            time.sleep(self.FPS)
+
+    def read(self):
+        return self.status, self.frame
+        
+    def isOpened(self):
+        return self.capture.isOpened()
+
+    def get(self, propId):
+        return self.capture.get(propId)
+
+    def release(self):
+        self.stopped = True
+        if self.thread.is_alive():
+            self.thread.join()
+        self.capture.release()

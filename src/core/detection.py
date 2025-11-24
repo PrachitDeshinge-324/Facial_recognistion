@@ -13,6 +13,9 @@ from src.config.model import Primary_model, Fallback_model, Detection_size, Prov
 class FaceDetector:
     """Face detection class using InsightFace models."""
     
+    _shared_app = None
+    _shared_config = None
+    
     def __init__(self, model_name: str = Primary_model, providers: List[str] = None):
         """Initialize the face detector.
         
@@ -24,25 +27,54 @@ class FaceDetector:
         self.providers = providers or Providers
         self.app = None
         self._initialize_model()
+        self.app = FaceDetector._shared_app
     
     def _initialize_model(self) -> None:
         """Initialize the InsightFace model."""
+        cfg = (self.model_name, tuple(self.providers))
+        if FaceDetector._shared_app is not None and FaceDetector._shared_config == cfg:
+            return
         try:
-            self.app = FaceAnalysis(name=self.model_name, providers=self.providers)
-            self.app.prepare(ctx_id=0, det_size=(Detection_size, Detection_size))
+            app = FaceAnalysis(name=self.model_name, providers=self.providers)
+            app.prepare(ctx_id=0, det_size=(Detection_size, Detection_size))
+            FaceDetector._shared_app = app
+            FaceDetector._shared_config = cfg
         except Exception as e:
             print(f"Error initializing primary model: {e}")
             if self.model_name != Fallback_model:
                 print(f"Trying fallback model: {Fallback_model}")
                 self.model_name = Fallback_model
-                self.app = FaceAnalysis(name=self.model_name, providers=self.providers)
-                self.app.prepare(ctx_id=0, det_size=(Detection_size, Detection_size))
+                self._initialize_model()
     
-    def detect_faces(self, image: np.ndarray):
+    def preprocess_image(self, image: np.ndarray) -> np.ndarray:
+        """Preprocess image for better detection in outdoor/difficult conditions.
+        
+        Applies:
+        1. Gamma correction for brightness adjustment
+        2. CLAHE (Contrast Limited Adaptive Histogram Equalization) for local contrast
+        """
+        # Convert to LAB color space
+        lab = cv.cvtColor(image, cv.COLOR_BGR2LAB)
+        l, a, b = cv.split(lab)
+
+        # Apply CLAHE to L-channel
+        clahe = cv.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        cl = clahe.apply(l)
+
+        # Merge channels
+        limg = cv.merge((cl, a, b))
+
+        # Convert back to BGR
+        processed = cv.cvtColor(limg, cv.COLOR_LAB2BGR)
+        
+        return processed
+
+    def detect_faces(self, image: np.ndarray, preprocess: bool = False):
         """Detect faces in an image.
         
         Args:
             image: Image as numpy array (BGR format from OpenCV)
+            preprocess: Whether to apply preprocessing for difficult lighting
             
         Returns:
             List of face objects from InsightFace
@@ -50,7 +82,11 @@ class FaceDetector:
         if self.app is None:
             raise RuntimeError("Model not initialized")
         
-        return self.app.get(image)
+        img_to_process = image
+        if preprocess:
+            img_to_process = self.preprocess_image(image)
+            
+        return self.app.get(img_to_process)
 
     def get_face_embeddings(self, image: np.ndarray):
         """Get face embeddings from an image.

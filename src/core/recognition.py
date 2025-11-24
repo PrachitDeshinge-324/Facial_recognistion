@@ -58,16 +58,27 @@ class FaceRecognizer:
             return "Unknown", best_similarity
     
     def recognize_faces(self, faces) -> List[Tuple[str, float]]:
-        """Recognize multiple faces from InsightFace face objects.
+        """Recognize multiple faces in a single batch operation."""
+        if not faces or self.database is None or len(self.database.get('embeddings', [])) == 0:
+            return [("Unknown", 0.0) for _ in faces]
         
-        Args:
-            faces: List of face objects from InsightFace
-            
-        Returns:
-            List of (name, confidence) tuples for each face
-        """
+        # Extract embeddings from all faces
+        face_embeddings = np.array([face.embedding for face in faces])
+        
+        # Calculate similarities in one batch operation
+        similarities = cosine_similarity(face_embeddings, self.database['embeddings'])
+        
+        # Process results
         results = []
-        for face in faces:
-            name, confidence = self.recognize_face(face.embedding)
-            results.append((name, confidence))
+        for i, similarity_row in enumerate(similarities):
+            best_match_idx = np.argmax(similarity_row)
+            best_similarity = similarity_row[best_match_idx]
+            
+            if best_similarity >= self.threshold:
+                name = self.database['names'][best_match_idx]
+            else:
+                name = "Unknown"
+                
+            results.append((name, best_similarity))
+            
         return results
